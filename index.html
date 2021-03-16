@@ -1,0 +1,74 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <title>Chatjs</title>
+    <script src="lib/codemirror.js"></script>
+    <link rel="stylesheet" href="lib/codemirror.css">
+    <!-- <link rel="stylesheet" href="theme/monokai.css"> -->
+    <script src="mode/javascript/javascript.js"></script>
+    <script>
+      const scriptStr = 'script';
+      let cm;
+      let appTemplate;
+      function onSubmit() {
+        cm.save();
+        const iframe = document.getElementById("result");
+        const sourceElem = document.getElementById('source');
+        window.localStorage.setItem("source", sourceElem.value);
+        iframe.srcdoc = appTemplate.replaceAll('//__MAIN_FUNCTION_BODY__', sourceElem.value);
+      }
+    </script>
+
+    <style>
+      html {
+        height: 100%;
+      }
+      body {
+        height: 100%;
+        margin: 0;
+      }
+      #source {
+        min-height: 200px;
+        width: 100%;
+        border: none;
+        background-color: rgb(238, 236, 214);
+        resize: none;
+      }
+      .CodeMirror {
+        background-color: rgb(238, 236, 214);
+        height: unset;
+        flex: 1;
+      }
+      #result {
+        width: 100%;
+        border: none;
+      }
+    </style>
+  </head>
+  <body style="display: flex;">
+    <div style="flex: 1; display: flex; flex-direction: column;">
+      <button onclick="onSubmit()">Run</button>
+      <textarea id="source" style="flex: 1;"></textarea>
+    </div>
+    <div style="flex: 1">
+      <iframe id="result" srcdoc="Click run to start the program"></iframe>
+    </div>
+    <script>
+      document.body.onload = function() {
+        const source = window.localStorage.getItem("source");
+        const sourceElem = document.getElementById('source');
+        if (source) {
+          sourceElem.value = source;
+        }
+        cm = CodeMirror.fromTextArea(sourceElem, {
+          lineNumbers: true,
+          //theme: 'monokai',
+        });
+
+        fetch('app_template.html')
+        .then(response => response.text())
+        .then(text => {appTemplate = text});
+      }
+    </script>
+  </body>
+</html>
