@@ -15,7 +15,7 @@
         const iframe = document.getElementById("result");
         const sourceElem = document.getElementById('source');
         window.localStorage.setItem("source", sourceElem.value);
-        iframe.srcdoc = appTemplate.replaceAll('//__MAIN_FUNCTION_BODY__', sourceElem.value);
+        iframe.srcdoc = appTemplate.replaceAll('__MAIN_FUNCTION_BODY__', sourceElem.value.replaceAll('</scr'+'ipt>', '__SCRIPT_TAG_END__'));
       }
     </script>
 

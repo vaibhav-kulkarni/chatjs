@@ -14,8 +14,11 @@
         background-color: lightgoldenrodyellow;
         padding: 5px;
         display: inline-block;
+        white-space: pre-wrap;
       }
     </style>
+<script id="main-function" type="text/template">__MAIN_FUNCTION_BODY__
+</script>
   </head>
   <body>
     <div id="app">
@@ -38,12 +41,13 @@
     let main;
     window.onerror = function(err, p1, p2, p3, p4, p5) { loadErr = err; errParams = [p1,p2,p3,p4,p5] }
     const scriptLoad = new Promise(function(resolve, reject) {
+      const mainFuncElem = document.getElementById('main-function');
       const scriptElem = document.createElement('script');
       scriptElem.onerror = reject;
       scriptElem.onload = resolve;
       const theSrc = 
         `main = async function() {
-//__MAIN_FUNCTION_BODY__
+${mainFuncElem.innerHTML.replaceAll('__SCRIPT_TAG_END__', '</scr'+'ipt>')}
 }`
       const srcUrl = URL.createObjectURL(new Blob([theSrc], {type: 'text/javascript'}))
       scriptElem.src = srcUrl;
