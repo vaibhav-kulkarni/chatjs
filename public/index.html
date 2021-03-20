@@ -7,7 +7,6 @@
     <!-- <link rel="stylesheet" href="theme/monokai.css"> -->
     <script src="mode/javascript/javascript.js"></script>
     <script>
-      const scriptStr = 'script';
       let cm;
       let appTemplate;
       function onSubmit() {
@@ -15,7 +14,14 @@
         const iframe = document.getElementById("result");
         const sourceElem = document.getElementById('source');
         window.localStorage.setItem("source", sourceElem.value);
-        iframe.srcdoc = appTemplate.replaceAll('__MAIN_FUNCTION_BODY__', sourceElem.value.replaceAll('</scr'+'ipt>', '__SCRIPT_TAG_END__'));
+        const source = `importScripts('${window.location.origin}/run-program-worker.js')
+async function main() {
+${sourceElem.value}
+}
+`
+        let blob = new Blob([source], {type: 'text/javascript'});
+        let url = URL.createObjectURL(blob);
+        iframe.contentWindow.runProgram(url);
       }
     </script>
 
@@ -41,6 +47,7 @@
       }
       #result {
         width: 100%;
+        height: 100%;
         border: none;
       }
     </style>
@@ -51,7 +58,7 @@
       <textarea id="source" style="flex: 1;"></textarea>
     </div>
     <div style="flex: 1">
-      <iframe id="result" srcdoc="Click run to start the program"></iframe>
+      <iframe id="result" src="app-executor.html"></iframe>
     </div>
     <script>
       document.body.onload = function() {
@@ -64,10 +71,6 @@
           lineNumbers: true,
           //theme: 'monokai',
         });
-
-        fetch('app_template.html')
-        .then(response => response.text())
-        .then(text => {appTemplate = text});
       }
     </script>
   </body>

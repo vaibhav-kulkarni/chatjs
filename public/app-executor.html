@@ -1,0 +1,139 @@
+<html>
+  <head>
+    <script src="https://unpkg.com/vue@3.0.7/dist/vue.global.prod.js"></script>
+    <style>
+      .msg-input {
+        text-align: right;
+      }
+      .msg-input > span {
+        background-color: #DDFF99;
+        padding: 5px;
+        display: inline-block;
+      }
+      .msg-output > span {
+        background-color: lightgoldenrodyellow;
+        padding: 5px;
+        display: inline-block;
+        white-space: pre-wrap;
+      }
+    </style>
+  </head>
+  <body>
+    <div id="app">
+      <div v-if="isBeforeFirstRun">Click Run to start the program</div>
+      <div v-if="isError">An error while occured loading the script: {{errMessage}}</div>
+      <div v-for="msg in msgArr" :class="{ 'msg-input': msg.type == 'input', 'msg-output': msg.type == 'output'}">
+        <span>
+          {{msg.text}}
+        </span>
+      </div>
+      <div v-if="!isCompleted && !isBeforeFirstRun && isWaiting">Waiting...</div>
+      <div v-if="!isCompleted && !isWaiting" style="text-align: right;">
+        <input type="text" v-model="inputText" />
+        <button v-on:click="onSubmit">Submit</button>
+      </div>
+      <div v-if="isCompleted && !isError">Program completed</div>
+    </div>
+  </body>
+  <script>
+    let inpResolve, inpReject;
+    let buf = '';
+
+    const App = {
+      data() {
+        return {
+          isBeforeFirstRun: true,
+          msgArr: [],
+          inputText: '',
+          isCompleted: false,
+          isError: false,
+          errMessage: '',
+          isWaiting: true,
+        }
+      },
+      methods: {
+        onSubmit() {
+          const text = this.inputText;
+          this.msgArr.push({
+            text,
+            type: 'input',
+          });
+          this.inputText = '';
+          this.isWaiting = true;
+          worker.postMessage({
+            type: 'input',
+            text,
+          });
+        }
+      }
+    }
+
+    const vm = Vue.createApp(App).mount('#app');
+    let worker;
+
+    function runProgram(url) {
+      if (worker) {
+        worker.terminate();
+      }
+
+      vm.isBeforeFirstRun = false;
+      vm.msgArr = [];
+      vm.inputText = '';
+      vm.isCompleted = false;
+      vm.isError = false;
+      vm.errMessage = '';
+      vm.isWaiting = true;
+
+      worker = new Worker(url);
+      worker.onmessage = function(e) {
+        const {data} = e;
+        switch (data.type) {
+          case 'output':
+            vm.msgArr.push(data)
+            break;
+          case 'inputStart':
+            vm.isWaiting = false;
+            break;
+          case 'loadError':
+            console.log(data.err);
+            break;
+          case 'finished':
+            vm.isCompleted = true;
+            break;
+          case 'execError':
+            let lineNumMsg = '';
+            if (data.err.stack) {
+              let stackLines = data.err.stack.split('\n', 2);
+              if (stackLines.length >= 2) {
+                let lineTokens = stackLines[1].split(':');
+                if (lineTokens.length >= 2) {
+                  lineNumMsg = " line "+(Number(lineTokens[lineTokens.length-2])-2)+":"+lineTokens[lineTokens.length-1].replaceAll(')', '');
+                }
+              }
+            }
+            vm.msgArr.push({
+              text: 'Program encountered an error: '+data.err.message+lineNumMsg,
+              type: 'output',
+            });
+            vm.isCompleted = true;
+            break;
+          default:
+            console.log('Unknown message type', data.type)
+        }
+      }
+
+      worker.onerror = function(err) {
+        console.log(err)
+        vm.isError = true;
+        vm.errMessage = err.message + " line " + (err.lineno-2) + ":" + (err.colno);
+        vm.isCompleted = true;
+      }
+
+      worker.postMessage({
+        type: 'start'
+      })
+    }
+
+
+  </script>
+</html>
